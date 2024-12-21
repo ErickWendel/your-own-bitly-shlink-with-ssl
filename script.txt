@@ -1,0 +1,9 @@
+docker exec -it shlink shlink api-key:generate
+APIKEY=25092200-f046-4ea8-a3e1-32994d88be5b
+curl -H "X-Api-Key: $APIKEY" https://srv665452.hstgr.cloud/rest/v3/short-urls
+rm docker-compose.yaml && vim docker-compose.yaml && docker-compose up
+https://shlink.io/documentation/install-docker-image/
+https://matomo.org/matomo-on-premise/
+https://shlink.io/documentation/advanced/send-visits-to-matomo/
+https://github.com/matomo-org/docker/blob/master/.examples/apache/docker-compose.yml
+https://www.hostinger.com.br/tutoriais/instalar-docker-ubuntu?utm_campaign=Generic-Tutorials-DSA|NT:Se|LO:BR-t1&utm_medium=ppc&gad_source=1&gclid=CjwKCAiA65m7BhAwEiwAAgu4JIxPq4A5h_y8kyxNjGE9cV05irHNRwS0268ayIu-i0ac5iGIRg6IjRoCHlsQAvD_BwE

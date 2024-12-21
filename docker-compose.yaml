@@ -1,0 +1,71 @@
+services:
+  traefik:
+    image: "traefik:v3.2"
+    container_name: "traefik"
+    command:
+      - "--api.insecure=true"
+      - "--log.level=DEBUG"
+      - "--api.dashboard=true"
+
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+
+      - "--entryPoints.websecure.address=:443"
+      - "--entryPoints.web.address=:80"
+      - "--entryPoints.web.http.redirections.entryPoint.to=websecure"
+      - "--entryPoints.web.http.redirections.entryPoint.scheme=https"
+
+      - "--certificatesresolvers.myresolver.acme.tlschallenge=true"
+      - "--certificatesresolvers.myresolver.acme.email=erick.workspace@gmail.com"
+      - "--certificatesresolvers.myresolver.acme.storage=/letsencrypt/acme.json"
+    ports:
+      - "443:443"
+      - "8080:8080"
+    volumes:
+      - "./letsencrypt:/letsencrypt"
+      # - "./routes:/etc/traefik/dynamic"
+      - "/var/run/docker.sock:/var/run/docker.sock:ro"
+    labels:
+      - "traefik.enable=true"
+
+  shlink:
+    image: shlinkio/shlink:latest
+    container_name: shlink
+    restart: always
+    ports:
+      - "8081:8080"
+    environment:
+      - INITIAL_API_KEY="25092200-f046-4ea8-a3e1-32994d88be5b"
+      - DEFAULT_DOMAIN=srv665452.hstgr.cloud
+      - IS_HTTPS_ENABLED=true
+      - DB_DRIVER=postgres
+      - DB_USER=shlink_user
+      - DB_PASSWORD=shlink_password
+      - DB_HOST=postgres
+      - DB_NAME=shlink
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/rest/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    depends_on:
+      - postgres
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.shlink.rule=Host(`srv665452.hstgr.cloud`) && PathPrefix(`/`)"
+      - "traefik.http.routers.shlink.entrypoints=websecure"
+      - "traefik.http.routers.shlink.tls.certresolver=myresolver"
+      - "traefik.http.services.shlink.loadbalancer.server.port=8080"
+
+  postgres:
+    image: postgres:15
+    restart: always
+    environment:
+      POSTGRES_DB: shlink
+      POSTGRES_USER: shlink_user
+      POSTGRES_PASSWORD: shlink_password
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+volumes:
+  db_data:
