@@ -8,6 +8,9 @@ while true; do
 done
 
 rm docker-compose.yaml && vim docker-compose.yaml && docker-compose up
+https://doc.traefik.io/traefik/user-guides/docker-compose/basic-example/
+
+https://ewbr.cc/hostinger-ew-1012
 https://shlink.io/documentation/install-docker-image/
 https://matomo.org/matomo-on-premise/
 https://shlink.io/documentation/advanced/send-visits-to-matomo/
