@@ -27,6 +27,6 @@ entryPoints:
 certificatesResolvers:
   myresolver:
     acme:
-      email: "erick.workspace@gmail.com"
+      email: "erick.test@gmail.com"
       storage: "/letsencrypt/acme.json"
       tlsChallenge: {}
