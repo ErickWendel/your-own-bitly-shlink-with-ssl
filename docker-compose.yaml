@@ -12,7 +12,6 @@ services:
       - "./traefik.yml:/etc/traefik/traefik.yml:ro"
       - "/var/run/docker.sock:/var/run/docker.sock:ro"
 
-
   shlink:
     image: shlinkio/shlink:latest
     container_name: shlink
@@ -22,7 +21,7 @@ services:
     environment:
       - INITIAL_API_KEY=${SHLINK_API_KEY}
       - DEFAULT_DOMAIN=${DOMAIN}
-      - IS_HTTPS_ENABLED=true
+      - IS_HTTPS_ENABLED=${SHLINK_IS_HTTPS_ENABLED}
 
       - DB_DRIVER=${DB_DRIVER}
       - DB_USER=${DB_USER}
