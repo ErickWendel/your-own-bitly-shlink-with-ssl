@@ -17,8 +17,6 @@ services:
     image: shlinkio/shlink:latest
     container_name: shlink
     restart: always
-    ports:
-      - "8081:8080"
     environment:
       - INITIAL_API_KEY=${SHLINK_API_KEY}
       - DEFAULT_DOMAIN=${DOMAIN}
@@ -61,10 +59,8 @@ services:
     links:
       - mariadb
     restart: unless-stopped
-    ports:
-      - 9000:80
     volumes:
-      - ./matomo-conf/config.ini.php:/var/www/html/config/config.ini.php
+      # - ./matomo-conf/config.ini.php:/var/www/html/config/config.ini.php
       #- ./logs:/var/www/html/logs
       - ./matomo:/var/www/html
     environment:
@@ -106,7 +102,7 @@ services:
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - db_data:/var/lib/postgresql/data
+      - ./postgres_data:/var/lib/postgresql/data
     restart: "no"
 
   # postgres-init:
@@ -124,6 +120,3 @@ services:
   #     - ./init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh
   #   entrypoint: ["/bin/bash", "/docker-entrypoint-initdb.d/init-dbs.sh"]
   #   restart: "no"
-
-volumes:
-  db_data:
