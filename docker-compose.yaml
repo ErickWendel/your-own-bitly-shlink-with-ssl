@@ -88,23 +88,6 @@ services:
       - "traefik.http.routers.matomo.tls.certresolver=myresolver"
       - "traefik.http.services.matomo.loadbalancer.server.port=80"
 
-      # # Add custom headers (Referrer Policy, Content Type)
-      # - "traefik.http.middlewares.matomo-headers.headers.customResponseHeaders.Referrer-Policy=origin"
-      # - "traefik.http.middlewares.matomo-headers.headers.frameDeny=true"
-      # - "traefik.http.middlewares.matomo-headers.headers.contentTypeNosniff=true"
-      # - "traefik.http.routers.matomo.middlewares=matomo-headers"
-
-      # # Cache and expiration rules for static assets
-      # - "traefik.http.middlewares.matomo-cache.headers.customResponseHeaders.Cache-Control=public, max-age=3600"
-      # - "traefik.http.middlewares.matomo-cache.headers.customResponseHeaders.Pragma=public"
-      # - "traefik.http.routers.matomo.middlewares=matomo-cache"
-
-      # # Deny access to specific directories
-      # - "traefik.http.middlewares.matomo-restrict-file-server.fileServer.root=/var/www/html"
-      # - "traefik.http.middlewares.matomo-restrict-file-server.fileServer.index=index.php"
-      # - "traefik.http.middlewares.matomo-restrict-file-server.fileServer.rules[0].path=/config"
-      # - "traefik.http.middlewares.matomo-restrict-file-server.fileServer.rules[0].method=deny"
-
   mariadb:
     image: mariadb
     command: --max-allowed-packet=64MB
