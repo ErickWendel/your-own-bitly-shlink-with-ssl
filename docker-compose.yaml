@@ -7,6 +7,7 @@ services:
     ports:
       - "443:443"
       - "8080:8080"
+      - "80:80"
     volumes:
       - "./letsencrypt:/letsencrypt"
       - "./traefik.yml:/etc/traefik/traefik.yml:ro"
@@ -24,10 +25,15 @@ services:
       - IS_HTTPS_ENABLED=${SHLINK_IS_HTTPS_ENABLED}
 
       - DB_DRIVER=${DB_DRIVER}
+      - DB_HOST=${DB_HOST}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
-      - DB_HOST=${DB_HOST}
-      - DB_NAME=${DB_NAME}
+
+      - DB_NAME=${SHLINK_DB_NAME}
+      - MATOMO_ENABLED=true
+      - MATOMO_BASE_URL=http://matomo:80
+      - MATOMO_SITE_ID=1
+      - MATOMO_API_TOKEN=373be89d0deb72f883008608c74808da
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/rest/health"]
       interval: 30s
@@ -35,22 +41,106 @@ services:
       retries: 3
     depends_on:
       - postgres
+      - matomo
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.shlink.rule=Host(`${DOMAIN}`) && PathPrefix(`/`)"
+      - "traefik.http.routers.shlink.rule=Host(`${DOMAIN}`) && (PathPrefix(`//shlink/`) || PathPrefix(`/shlink`))"
+
+      - "traefik.http.middlewares.shlink-strip.stripprefix.prefixes=/shlink"
+      - "traefik.http.middlewares.shlink-strip.stripprefix.forceslash=false"
+      - "traefik.http.routers.shlink.middlewares=shlink-strip@docker"
+
       - "traefik.http.routers.shlink.entrypoints=websecure"
       - "traefik.http.routers.shlink.tls.certresolver=myresolver"
       - "traefik.http.services.shlink.loadbalancer.server.port=8080"
 
+  # https://jiv-e.hashnode.dev/how-to-run-matomo-in-docker-locally
+  matomo:
+    image: matomo:4.16
+    container_name: matomo
+    links:
+      - mariadb
+    restart: unless-stopped
+    ports:
+      - 9000:80
+    volumes:
+      - ./matomo-conf/config.ini.php:/var/www/html/config/config.ini.php
+      #- ./logs:/var/www/html/logs
+      - ./matomo:/var/www/html
+    environment:
+      MATOMO_DATABASE_HOST: mariadb
+      PHP_MEMORY_LIMIT: 2048M
+    env_file:
+      - ./matomo-conf/db.env
+    labels:
+      # Enable Traefik for this service
+      - "traefik.enable=true"
+
+      # Define the router for HTTPS
+      - "traefik.http.routers.matomo.rule=Host(`${DOMAIN}`) && (PathPrefix(`//matomo/`) || PathPrefix(`/matomo`))"
+      - "traefik.http.middlewares.matomo-strip.stripprefix.prefixes=/matomo"
+      - "traefik.http.middlewares.matomo-strip.stripprefix.forceslash=false"
+      # - "traefik.http.middlewares.matomo-add.addprefix.prefix=/matomo"
+      # - "traefik.http.routers.matomo.middlewares=matomo-strip@docker,matomo-add@docker"
+      - "traefik.http.routers.matomo.middlewares=matomo-strip@docker"
+
+      - "traefik.http.routers.matomo.entrypoints=websecure"
+      - "traefik.http.routers.matomo.tls.certresolver=myresolver"
+      - "traefik.http.services.matomo.loadbalancer.server.port=80"
+
+      # # Add custom headers (Referrer Policy, Content Type)
+      # - "traefik.http.middlewares.matomo-headers.headers.customResponseHeaders.Referrer-Policy=origin"
+      # - "traefik.http.middlewares.matomo-headers.headers.frameDeny=true"
+      # - "traefik.http.middlewares.matomo-headers.headers.contentTypeNosniff=true"
+      # - "traefik.http.routers.matomo.middlewares=matomo-headers"
+
+      # # Cache and expiration rules for static assets
+      # - "traefik.http.middlewares.matomo-cache.headers.customResponseHeaders.Cache-Control=public, max-age=3600"
+      # - "traefik.http.middlewares.matomo-cache.headers.customResponseHeaders.Pragma=public"
+      # - "traefik.http.routers.matomo.middlewares=matomo-cache"
+
+      # # Deny access to specific directories
+      # - "traefik.http.middlewares.matomo-restrict-file-server.fileServer.root=/var/www/html"
+      # - "traefik.http.middlewares.matomo-restrict-file-server.fileServer.index=index.php"
+      # - "traefik.http.middlewares.matomo-restrict-file-server.fileServer.rules[0].path=/config"
+      # - "traefik.http.middlewares.matomo-restrict-file-server.fileServer.rules[0].method=deny"
+
+  mariadb:
+    image: mariadb
+    command: --max-allowed-packet=64MB
+    restart: always
+    volumes:
+      - ./mariadb:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD:
+    env_file:
+      - ./matomo-conf/db.env
+
   postgres:
     image: postgres:15
-    restart: always
     environment:
-      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_DB: ${SHLINK_DB_NAME}
       POSTGRES_USER: ${DB_USER}
       POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - db_data:/var/lib/postgresql/data
+    restart: "no"
+
+  # postgres-init:
+  #   image: postgres:15
+  #   container_name: postgres-init
+  #   depends_on:
+  #     - postgres
+  #   env_file:
+  #     - .env
+  #   environment:
+  #     POSTGRES_DB: ${DB_NAME}
+  #     POSTGRES_USER: ${DB_USER}
+  #     POSTGRES_PASSWORD: ${DB_PASSWORD}
+  #   volumes:
+  #     - ./init-dbs.sh:/docker-entrypoint-initdb.d/init-dbs.sh
+  #   entrypoint: ["/bin/bash", "/docker-entrypoint-initdb.d/init-dbs.sh"]
+  #   restart: "no"
 
 volumes:
   db_data:
